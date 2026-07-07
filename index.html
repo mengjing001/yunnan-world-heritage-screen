@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>彩云之南 · 世界遗产 · 数据大屏</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js">
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #F6F2E6;
+            font-family: "Noto Serif SC", "思源宋体", SimSun, serif;
+            min-height: 100vh;
+             color: #4A3F30;
+            overflow: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(160, 140, 110, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(145, 130, 100, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 100%, rgba(120, 140, 110, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .header {
+            position: relative;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-bottom: 1px solid rgba(190, 160, 100, 0.22);
+            background: linear-gradient(180deg, rgba(248, 244, 234, 0.9) 0%, rgba(248, 244, 234, 0.4) 100%);
+            flex-shrink: 0;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 10%;
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(190, 160, 100, 0.4), transparent);
+        }
+        .header h1 {
+            font-size: 28px;
+            color: #4A3F30;
+            font-weight: 500;
+            letter-spacing: 0.12rem;
+            text-shadow: 0 0 40px rgba(190, 160, 100, 0.12);
+        }
+        .header h1 span {
+            color: #B99C66;
+        }
+        .header .time {
+            position: absolute;
+            right: 28px;
+            font-size: 13px;
+            color: rgba(74, 63, 48, 0.4);
+            letter-spacing: 0.06rem;
+        }
+        .header .subtitle {
+            position: absolute;
+            left: 28px;
+            font-size: 12px;
+            color: #4A3F30;
+            letter-spacing: 0.08rem;
+        }
+
+        /* ===== 主体 Flex 布局 ===== */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 64px);
+            padding: 10px;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+            min-height: 0;
+        }
+
+        /* ===== 左侧面板 ===== */
+        .left-panel {
+            flex: 0 0 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 0;
+        }
+        .left-panel .chart-card {
+            background: rgba(252, 248, 238, 0.65);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(190, 160, 100, 0.18);
+            border-radius: 10px;
+            padding: 8px 12px 4px;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.3s;
+            overflow: hidden;
+        }
+        .left-panel .chart-card:hover {
+            border-color: rgba(190, 160, 100, 0.35);
+        }
+        .left-panel .chart-card .card-title {
+            font-size: 12px;
+            color: rgba(74, 63, 48, 0.75);
+            letter-spacing: 0.06rem;
+            border-bottom: 1px solid rgba(74, 63, 48, 0.08);
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+            flex-shrink: 0;
+        }
+        .left-panel .chart-card .card-title .icon {
+            margin-right: 6px;
+        }
+        .left-panel .chart-card .chart-container {
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+        }
+
+        /* 左下角4个小数据卡片 */
+        .data-cards {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .data-cards .data-card {
+            flex: 1;
+            background: rgba(252, 248, 238, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(190, 160, 100, 0.18);
+            border-radius: 8px;
+            padding: 8px 4px 6px;
+            text-align: center;
+            transition: border-color 0.3s;
+            min-width: 0;
+        }
+        .data-cards .data-card:hover {
+            border-color: rgba(190, 160, 100, 0.35);
+        }
+        .data-cards .data-card .number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #B99C66;
+            line-height: 1.2;
+            text-shadow: 0 0 30px rgba(190, 160, 100, 0.1);
+        }
+        .data-cards .data-card .number .unit {
+            font-size: 12px;
+            color: rgba(74, 63, 48, 0.45);
+            font-weight: 400;
+            margin-left: 2px;
+        }
+        .data-cards .data-card .label {
+            font-size: 10px;
+            color: rgba(74, 63, 48, 0.6);
+            letter-spacing: 0.04rem;
+            margin-top: 1px;
+        }
+
+        /* ===== 中间地图 ===== */
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: rgba(220, 210, 190, 0.25);
+            border-radius: 10px;
+            border: 1px solid rgba(190, 160, 100, 0.15);
+            overflow: hidden;
+            min-width: 0;
+        }
+        #map2d {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ===== 右侧面板 ===== */
+        .right-panel {
+            flex: 0 0 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 0;
+        }
+        .right-panel .chart-card {
+            background: rgba(252, 248, 238, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(190, 160, 100, 0.18);
+            border-radius: 10px;
+            padding: 8px 12px 4px;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.3s;
+            overflow: hidden;
+        }
+        .right-panel .chart-card:hover {
+            border-color: rgba(190, 160, 100, 0.35);
+        }
+        .right-panel .chart-card .card-title {
+            font-size: 12px;
+            color: rgba(74, 63, 48, 0.75);
+            letter-spacing: 0.06rem;
+            border-bottom: 1px solid rgba(74, 63, 48, 0.08);
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+            flex-shrink: 0;
+        }
+        .right-panel .chart-card .card-title .icon {
+            margin-right: 6px;
+        }
+        .right-panel .chart-card .chart-container {
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+        }
+        .right-panel .detail-card {
+            flex: 1.2;
+            background: rgba(252, 248, 238, 0.72);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(190, 160, 100, 0.18);
+            border-radius: 10px;
+            padding: 12px 16px 14px;
+            overflow-y: auto;
+            transition: border-color 0.4s;
+            min-height: 0;
+        }
+        .right-panel .detail-card:hover {
+            border-color: rgba(190, 160, 100, 0.32);
+        }
+        .right-panel .detail-card::-webkit-scrollbar {
+            width: 2px;
+        }
+        .right-panel .detail-card::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .right-panel .detail-card::-webkit-scrollbar-thumb {
+            background: rgba(190, 160, 100, 0.25);
+            border-radius: 10px;
+        }
+
+        .detail-title {
+            font-size: 12px;
+            color: rgba(74, 63, 48, 0.7);
+            letter-spacing: 0.06rem;
+            border-bottom: 1px solid rgba(74, 63, 48, 0.08);
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+        .detail-title .icon {
+            margin-right: 6px;
+        }
+        .detail-image {
+            width: 100%;
+            height: 100px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid rgba(255, 255, 240, 0.03);
+            margin-bottom: 6px;
+            background: #0A0E27;
+        }
+        .detail-name {
+            font-size: 17px;
+            font-weight: 700;
+            color: #B99C66;
+        }
+        .detail-name .sub {
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(74, 63, 48, 0.3);
+            margin-left: 6px;
+        }
+        .detail-meta {
+            font-size: 12px;
+            color: rgba(74, 63, 48, 0.65);
+            margin: 3px 0 5px;
+        }
+        .detail-meta span {
+            margin-right: 12px;
+        }
+        .detail-meta .type-tag {
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+        }
+        .type-tag.cultural {
+            background: rgba(190, 160, 100, 0.12);
+            color: #B99C66;
+        }
+        .type-tag.natural {
+            background: rgba(143, 168, 130, 0.12);
+            color: #8FA882;
+        }
+        .detail-desc {
+            font-size: 13px;
+            line-height: 1.7;
+            color: rgba(74, 63, 48, 0.6);
+            margin-top: 3px;
+        }
+        .fours-tags {
+            display: flex;
+            gap: 5px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        .fours-tags span {
+            font-size: 10px;
+            padding: 2px 10px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 240, 0.05);
+            background: rgba(255, 255, 240, 0.02);
+            color: rgba(255, 255, 240, 0.2);
+        }
+        .fours-tags .f-forest {
+            color: #6B9E5A;
+            border-color: rgba(107, 158, 90, 0.15);
+        }
+        .fours-tags .f-village {
+            color: #C49A6C;
+            border-color: rgba(196, 154, 108, 0.15);
+        }
+        .fours-tags .f-terrace {
+            color: #7DBD8A;
+            border-color: rgba(125, 189, 138, 0.15);
+        }
+        .fours-tags .f-water {
+            color: #5A9AB5;
+            border-color: rgba(90, 154, 181, 0.15);
+        }
+        .detail-empty {
+            text-align: center;
+            color: rgba(74, 63, 48, 0.25);
+            font-size: 13px;
+            padding: 30px 0;
+            letter-spacing: 0.06rem;
+        }
+
+        /* ===== 地图控制 ===== */
+        .map-controls {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            z-index: 20;
+            display: flex;
+            gap: 6px;
+        }
+        .map-controls button {
+            font-family: "Noto Serif SC", "思源宋体", SimSun, serif;
+            padding: 4px 14px;
+            font-size: 11px;
+            border-radius: 20px;
+            border: 1px solid rgba(190, 160, 100, 0.2);
+            background: rgba(248, 244, 234, 0.7);
+            backdrop-filter: blur(8px);
+            color: rgba(74, 63, 48, 0.6);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.04rem;
+        }
+        .map-controls button:hover {
+            background: rgba(190, 160, 100, 0.12);
+            border-color: rgba(218, 165, 32, 0.15);
+            color: #B99C66;
+        }
+
+        /* ===== 图例 ===== */
+        .map-legend {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            z-index: 15;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            background: rgba(248, 244, 234, 0.5);
+            backdrop-filter: blur(8px);
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(190, 160, 100, 0.1);
+        }
+        .map-legend .item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10px;
+            color: rgba(74, 63, 48, 0.5);
+            letter-spacing: 0.04rem;
+        }
+        .map-legend .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 240, 0.04);
+        }
+        .map-legend .dot.gold {
+            background: #B99C66;
+            box-shadow: 0 0 12px rgba(190, 160, 100, 0.10);
+        }
+        .map-legend .dot.orange {
+            background: #D49A6A;
+            box-shadow: 0 0 16px rgba(212, 154, 106, 0.12);
+        }
+        .map-legend .dot.green {
+            background: #8FA882;
+            box-shadow: 0 0 12px rgba(143, 168, 130, 0.08);
+        }
+
+        /* ===== 响应式 ===== */
+        @media screen and (max-width: 1200px) {
+            .left-panel {
+                flex: 0 0 260px;
+            }
+            .right-panel {
+                flex: 0 0 240px;
+            }
+            .data-cards .data-card .number {
+                font-size: 20px;
+            }
+            .header h1 {
+                font-size: 22px;
+            }
+        }
+        @media screen and (max-width: 900px) {
+            .main-container {
+                flex-direction: column;
+                height: auto;
+                padding: 6px;
+                gap: 6px;
+            }
+            .left-panel {
+                flex: none;
+                flex-direction: row;
+                flex-wrap: wrap;
+                height: auto;
+                min-height: 160px;
+            }
+            .left-panel .chart-card {
+                flex: 1;
+                min-width: 160px;
+                min-height: 140px;
+            }
+            .data-cards {
+                flex-wrap: wrap;
+                width: 100%;
+            }
+            .data-cards .data-card {
+                flex: 1;
+                min-width: 50px;
+            }
+            .right-panel {
+                flex: none;
+                flex-direction: row;
+                flex-wrap: wrap;
+                height: auto;
+                min-height: 160px;
+            }
+            .right-panel .chart-card,
+            .right-panel .detail-card {
+                flex: 1;
+                min-width: 160px;
+                min-height: 140px;
+            }
+            .map-container {
+                height: 350px;
+                flex: none;
+            }
+            .header .time,
+            .header .subtitle {
+                display: none;
+            }
+        }
+        @media screen and (max-width: 600px) {
+            .header h1 {
+                font-size: 16px;
+                letter-spacing: 0.04rem;
+            }
+            .left-panel .chart-card {
+                min-width: 100%;
+                min-height: 120px;
+            }
+            .right-panel .chart-card,
+            .right-panel .detail-card {
+                min-width: 100%;
+                min-height: 120px;
+            }
+            .map-container {
+                height: 250px;
+            }
+            .map-legend {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 顶部标题栏 ===== -->
+    <div class="header">
+        <div class="subtitle">🌾 世界遗产 · 中国云南</div>
+        <h1>彩云之南 · <span>世界遗产地图</span></h1>
+        <div class="time" id="showTime"></div>
+    </div>
+
+    <!-- ===== 主体 ===== -->
+    <div class="main-container">
+
+        <!-- ===== 左侧面板 ===== -->
+        <div class="left-panel">
+
+            <!-- 卡片1：世界遗产类型分布 -->
+            <div class="chart-card">
+                <div class="card-title"><span class="icon">📊</span> 世界遗产类型分布（60项）</div>
+                <div class="chart-container" id="typeChart"></div>
+            </div>
+
+            <!-- 卡片2：各省世界遗产排名（全部省份） -->
+            <div class="chart-card">
+                <div class="card-title"><span class="icon">🏆</span> 各省世界遗产数量排名</div>
+                <div class="chart-container" id="provinceChart"></div>
+            </div>
+
+            <!-- 底部4个数据卡片 -->
+            <div class="data-cards">
+                <div class="data-card">
+                    <div class="number">60 <span class="unit">项</span></div>
+                    <div class="label">中国世界遗产</div>
+                </div>
+                <div class="data-card">
+                    <div class="number">5 <span class="unit">处</span></div>
+                    <div class="label">云南世界遗产</div>
+                </div>
+                <div class="data-card">
+                    <div class="number">3 <span class="unit">处</span></div>
+                    <div class="label">文化遗产</div>
+                </div>
+                <div class="data-card">
+                    <div class="number">第 <span style="color:#C9A84C;">2</span></div>
+                    <div class="label">全国排名</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 中间地图 ===== -->
+        <div class="map-container">
+            <div id="map2d"></div>
+            <div class="map-controls">
+                <button id="btnReset">🔄 重置</button>
+            </div>
+            <div class="map-legend">
+                <div class="item"><span class="dot gold"></span>文化遗产</div>
+                <div class="item"><span class="dot green"></span>自然遗产</div>
+                <div class="item"><span class="dot orange"></span>哈尼梯田 · 核心</div>
+            </div>
+        </div>
+
+        <!-- ===== 右侧面板 ===== -->
+        <div class="right-panel">
+
+            <!-- 卡片3：遗产详情 -->
+            <div class="detail-card" id="detailCard">
+                <div class="detail-title"><span class="icon">📖</span> 遗产详情</div>
+                <div id="detailContent">
+                    <div class="detail-empty">点击地图上的标注点<br>查看遗产详情</div>
+                </div>
+            </div>
+
+            <!-- 卡片4：世界遗产入选年份分布 -->
+            <div class="chart-card">
+                <div class="card-title"><span class="icon">📅</span> 世界遗产历年新增数量</div>
+                <div class="chart-container" id="yearChart"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // ============================================================
+        // 时间显示
+        // ============================================================
+        (function() {
+            var t = null;
+
+            function updateTime() {
+                var dt = new Date();
+                var y = dt.getFullYear();
+                var mt = String(dt.getMonth() + 1).padStart(2, '0');
+                var day = String(dt.getDate()).padStart(2, '0');
+                var h = String(dt.getHours()).padStart(2, '0');
+                var m = String(dt.getMinutes()).padStart(2, '0');
+                var s = String(dt.getSeconds()).padStart(2, '0');
+                document.getElementById('showTime').textContent =
+                    y + '.' + mt + '.' + day + '  ' + h + ':' + m + ':' + s;
+                t = setTimeout(updateTime, 1000);
+            }
+            updateTime();
+        })();
+
+        // ============================================================
+        // 遗产数据
+        // ============================================================
+        var heritageData = [{
+            id: 1,
+            name: '丽江古城',
+            type: '文化遗产',
+            year: 1997,
+            city: '丽江市',
+            coords: [100.23, 26.87],
+            desc: '丽江古城是保存完好的少数民族古城，纳西族文化的核心载体，以独特的城市格局、水系利用和东巴文化闻名于世。',
+            img: 'myimages/lijiang.jpg',
+            icon: '🏯'
+        }, {
+            id: 2,
+            name: '云南三江并流保护区',
+            type: '自然遗产',
+            year: 2003,
+            city: '迪庆/丽江/怒江',
+            coords: [99.00, 27.50],
+            desc: '三江并流是世界罕见的高山峡谷自然奇观，金沙江、澜沧江、怒江在横断山脉中并行奔流，生物多样性极其丰富。',
+            img: 'myimages/sanjiang.jpg',
+            icon: '🏔️'
+        }, {
+            id: 3,
+            name: '澄江化石遗址',
+            type: '自然遗产',
+            year: 2012,
+            city: '玉溪市',
+            coords: [102.98, 24.67],
+            desc: '澄江化石遗址是"寒武纪生命大爆发"的见证，保存了5.3亿年前最古老的脊椎动物祖先化石，是古生物学的圣地。',
+            img: 'myimages/chengjiang.jpg',
+            icon: '🦕'
+        }, {
+            id: 4,
+            name: '红河哈尼梯田文化景观',
+            type: '文化遗产',
+            year: 2013,
+            city: '红河州',
+            coords: [102.78, 23.09],
+            desc: '哈尼族1300年农耕文明的杰作，"森林—村寨—梯田—水系"四素同构的生态智慧，人与自然和谐共生的典范。',
+            img: 'myimages/hani_terrace.jpg',
+            icon: '🌾',
+            isHighlight: true
+        }, {
+            id: 5,
+            name: '普洱景迈山古茶林文化景观',
+            type: '文化遗产',
+            year: 2023,
+            city: '普洱市',
+            coords: [100.01, 22.20],
+            desc: '景迈山古茶林是"茶文化"的活态博物馆，千年古茶树与村寨共生，是山区少数民族利用山林资源的典范。',
+            img: 'myimages/jingmai.jpg',
+            icon: '🍃'
+        }];
+
+        // ============================================================
+        // 左侧图表数据
+        // ============================================================
+
+        // ---- 60项世界遗产类型分布 ----
+        var typeData = [
+            { name: '文化遗产', value: 41, color: '#B99C66' },
+            { name: '自然遗产', value: 15, color: '#8FA882' },
+            { name: '双重遗产', value: 4, color: '#D49A6A' }
+        ];
+
+        // ---- 全部拥有世界遗产的省份（27个） ----
+        // 云南省为5处（丽江古城、三江并流、澄江化石、哈尼梯田、景迈山）
+        var allProvinceData = [
+            { name: '北京', value: 8 },
+            { name: '云南', value: 5 },
+            { name: '四川', value: 5 },
+            { name: '福建', value: 4 },
+            { name: '河南', value: 3 },
+            { name: '山西', value: 3 },
+            { name: '陕西', value: 3 },
+            { name: '湖北', value: 2 },
+            { name: '山东', value: 2 },
+            { name: '安徽', value: 2 },
+            { name: '江西', value: 2 },
+            { name: '江苏', value: 2 },
+            { name: '广东', value: 2 },
+            { name: '湖南', value: 2 },
+            { name: '河北', value: 2 },
+            { name: '浙江', value: 1 },
+            { name: '重庆', value: 1 },
+            { name: '甘肃', value: 1 },
+            { name: '西藏', value: 1 },
+            { name: '内蒙古', value: 1 },
+            { name: '广西', value: 1 },
+            { name: '吉林', value: 1 },
+            { name: '贵州', value: 1 },
+            { name: '宁夏', value: 1 },
+            { name: '澳门', value: 1 },
+            { name: '新疆', value: 1 },
+            { name: '青海', value: 1 }
+        ];
+        // 按数量降序排列
+        var provinceData = allProvinceData.sort(function(a, b) { return b.value - a.value; });
+
+        // ---- 世界遗产入选年份分布（1987-2025） ----
+        var yearData = [
+            { year: '1987', value: 6 },
+            { year: '1990', value: 1 },
+            { year: '1992', value: 3 },
+            { year: '1994', value: 4 },
+            { year: '1996', value: 2 },
+            { year: '1997', value: 3 },
+            { year: '1998', value: 2 },
+            { year: '1999', value: 2 },
+            { year: '2000', value: 5 },
+            { year: '2001', value: 1 },
+            { year: '2003', value: 1 },
+            { year: '2004', value: 1 },
+            { year: '2005', value: 1 },
+            { year: '2006', value: 1 },
+            { year: '2007', value: 2 },
+            { year: '2008', value: 2 },
+            { year: '2009', value: 1 },
+            { year: '2010', value: 2 },
+            { year: '2011', value: 1 },
+            { year: '2012', value: 2 },
+            { year: '2013', value: 2 },
+            { year: '2014', value: 2 },
+            { year: '2015', value: 1 },
+            { year: '2016', value: 1 },
+            { year: '2017', value: 2 },
+            { year: '2018', value: 1 },
+            { year: '2019', value: 2 },
+            { year: '2021', value: 1 },
+            { year: '2023', value: 1 },
+            { year: '2024', value: 3 },
+            { year: '2025', value: 1 }
+        ];
+
+        // ============================================================
+        // 初始化左侧图表
+        // ============================================================
+
+        // ---- 类型分布环形图 ----
+        var typeChart = echarts.init(document.getElementById('typeChart'));
+        typeChart.setOption({
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'item',
+                formatter: function(params) {
+                    return '<strong>' + params.name + '</strong><br/>数量：' + params.value + ' 项<br/>占比：' + params
+                        .percent + '%';
+                }
+            },
+            legend: {
+                orient: 'vertical',
+                right: 6,
+                top: 'center',
+                textStyle: {
+                    color: 'rgba(255,255,240,0.3)',
+                    fontSize: 10
+                },
+                itemWidth: 8,
+                itemHeight: 8
+            },
+            series: [{
+                type: 'pie',
+                radius: ['42%', '68%'],
+                avoidLabelOverlap: false,
+                itemStyle: {
+                    borderRadius: 4,
+                    borderColor: 'rgba(8,12,36,0.6)',
+                    borderWidth: 2
+                },
+                label: {
+                    show: true,
+                    formatter: '{d}%',
+                    color: '#4A3F30',
+                    fontSize: 10,
+                    fontWeight: 'bold'
+                },
+                labelLine: {
+                    length: 6,
+                    length2: 8,
+                    lineStyle: {
+                        color: 'rgba(255,255,240,0.04)'
+                    }
+                },
+                emphasis: {
+                    scale: true,
+                    scaleSize: 6
+                },
+                data: typeData.map(function(d) {
+                    return {
+                        name: d.name,
+                        value: d.value,
+                        itemStyle: { color: d.color }
+                    };
+                }),
+                animationDuration: 1200,
+                animationEasing: 'cubicOut'
+            }]
+        });
+
+        // ---- 省份排名柱状图（全部27个省份） ----
+        var provinceChart = echarts.init(document.getElementById('provinceChart'));
+        // 判断省份数量，动态调整字号
+        var fontSize = provinceData.length > 20 ? 8 : 10;
+
+        provinceChart.setOption({
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    var p = params[0];
+                    return '<strong>' + p.name + '</strong><br/>世界遗产：' + p.value + ' 项';
+                }
+            },
+            grid: {
+                left: 100,
+                right: 30,
+                top: 6,
+                bottom: 6
+            },
+            xAxis: {
+                type: 'value',
+                max: function(value) { return Math.ceil(value.max * 1.15); },
+                splitLine: {
+                    lineStyle: {
+                        color: 'rgba(255,255,240,0.02)',
+                        type: 'dashed'
+                    }
+                },
+                axisLabel: {
+                    color: 'rgba(255,255,240,0.12)',
+                    fontSize: 8
+                },
+                axisLine: { show: false },
+                axisTick: { show: false }
+            },
+            yAxis: {
+    type: 'category',
+    data: provinceData.map(function(d) { return d.name; }).reverse(),
+    axisLabel: {
+        color: function(value) {
+            return value === '云南' ? '#C9A84C' : '#4A3F30';
+        },
+        fontSize: 9,
+        fontWeight: function(value) {
+            return value === '云南' ? 'bold' : 'normal';
+        },
+        interval: 0,
+        // ===== ✅ 添加这个 formatter =====
+        formatter: function(value) {
+            // 北京和云南必须显示
+            if (value === '北京' || value === '云南') {
+                return value;
+            }
+            // 获取当前省份在 provinceData 中的索引（按数量降序排列）
+            var index = provinceData.findIndex(function(d) { return d.name === value; });
+            // 从第3个开始（索引2，四川），隔一个显示一个
+            // 索引2(四川)显示, 索引3(福建)隐藏, 索引4(河南)显示...
+            if (index >= 2 && index % 2 === 0) {
+                return value;
+            }
+            return '';
+        }
+    },
+    axisLine: { show: false },
+    axisTick: { show: false },
+    splitLine: { show: false }
+},
+            series: [{
+                type: 'bar',
+                data: provinceData.map(function(d) {
+                    var isYunnan = d.name === '云南';
+                    return {
+                        value: d.value,
+                        itemStyle: {
+                            color: isYunnan ? '#C9A84C' : function() {
+                                var idx = provinceData.length - 1 - provinceData.indexOf(d);
+                                var alpha = 0.08 + idx * 0.025;
+                                return 'rgba(201,168,76,' + Math.min(alpha, 0.45) + ')';
+                            }(),
+                            borderRadius: [0, 3, 3, 0]
+                        },
+                        label: {
+                            show: true,
+                            position: 'right',
+                            color: isYunnan ? '#C9A84C' : '#4A3F30',
+                            fontSize: isYunnan ? 11 : 9,
+                            fontWeight: isYunnan ? 'bold' : 'normal',
+                            formatter: function(params) {
+                                // ✅ 云南省显示：云南 5 ★
+                                if (isYunnan) {
+                                    return '云南 ' + params.value + ' ★';
+                                }
+                                return params.value;
+                            }
+                        }
+                    };
+                }).reverse(),
+                barWidth: '38%',
+                animationDuration: 800,
+                animationDelay: function(idx) {
+                    return idx * 60;
+                },
+                animationEasing: 'cubicOut'
+            }]
+        });
+
+        // ---- 世界遗产入选年份分布柱状图 ----
+        var yearChart = echarts.init(document.getElementById('yearChart'));
+        yearChart.setOption({
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    var p = params[0];
+                    return '<strong>' + p.name + '年</strong><br/>新增世界遗产：' + p.value + ' 项';
+                }
+            },
+            grid: {
+                left: 28,
+                right: 12,
+                top: 10,
+                bottom: 18
+            },
+            xAxis: {
+                type: 'category',
+                data: yearData.map(function(d) { return d.year; }),
+                axisLabel: {
+                    color: '#4A3F30',
+                    fontSize: 8,
+                    rotate: 35,
+                    interval: 0
+                },
+                axisLine: { show: false },
+                axisTick: { show: false },
+                splitLine: { show: false }
+            },
+            yAxis: {
+                type: 'value',
+                max: function(value) { return Math.ceil(value.max * 1.2); },
+                splitLine: {
+                    lineStyle: {
+                        color: 'rgba(255,255,240,0.02)',
+                        type: 'dashed'
+                    }
+                },
+                axisLabel: {
+                    color: '#4A3F30',
+                    fontSize: 8
+                },
+                axisLine: { show: false },
+                axisTick: { show: false }
+            },
+            series: [{
+                type: 'bar',
+                data: yearData.map(function(d) {
+                    var isKeyYear = d.year === '1987' || d.year === '2000' || d.year === '2013' || d.year ===
+                        '2025';
+                    var isHaniYear = d.year === '2013';
+                    return {
+                        value: d.value,
+                        itemStyle: {
+                            color: isHaniYear ? '#C9A84C' : isKeyYear ? 'rgba(201,168,76,0.5)' :
+                                'rgba(201,168,76,0.2)',
+                            borderRadius: [2, 2, 0, 0]
+                        },
+                        label: {
+                            show: d.value >= 3 || isHaniYear,
+                            position: 'top',
+                            color: isHaniYear ? '#C9A84C' : 'rgba(255,255,240,0.15)',
+                            fontSize: isHaniYear ? 11 : 8,
+                            fontWeight: isHaniYear ? 'bold' : 'normal',
+                            formatter: function(params) {
+                                if (params.dataIndex === 0) return '首批 6';
+                                return params.value;
+                            }
+                        }
+                    };
+                }),
+                barWidth: '45%',
+                animationDuration: 1000,
+                animationDelay: function(idx) {
+                    return idx * 40;
+                },
+                animationEasing: 'cubicOut'
+            }]
+        });
+
+        // ============================================================
+        // 窗口自适应
+        // ============================================================
+        window.addEventListener('resize', function() {
+            typeChart.resize();
+            provinceChart.resize();
+            yearChart.resize();
+            if (myChart) myChart.resize();
+        });
+
+        // ============================================================
+        // 初始化地图（普通地图）
+        // ============================================================
+        var chartDom = document.getElementById('map2d');
+        var myChart = echarts.init(chartDom);
+
+        function initMap() {
+            fetch('js/yunnan.json')
+                .then(function(response) {
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    return response.json();
+                })
+                .then(function(geoJson) {
+                    echarts.registerMap('yunnan', geoJson);
+
+                    var features = geoJson.features || [];
+                    var cityData = [];
+                    var highlightCities = ['丽江市', '玉溪市', '红河哈尼族彝族自治州', '普洱市', '迪庆藏族自治州', '怒江傈僳族自治州'];
+
+                    features.forEach(function(f) {
+                        var name = f.properties && (f.properties.name || f.properties.NAME);
+                        if (name) {
+                            var hasHeritage = highlightCities.some(function(h) {
+                                return name.indexOf(h) !== -1 || h.indexOf(name) !== -1;
+                            });
+                            cityData.push({
+                                name: name,
+                                value: hasHeritage ? 1 : 0
+                            });
+                        }
+                    });
+
+                    var option = {
+                        backgroundColor: 'transparent',
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: function(params) {
+                                if (params.componentSubType === 'scatter') {
+                                    var h = heritageData.find(function(d) { return d.name === params.name; });
+                                    if (h) return '<strong>' + h.name + '</strong><br/>' + h.type + ' · ' + h
+                                        .year + '年';
+                                }
+                                return params.name;
+                            }
+                        },
+                        visualMap: {
+                            show: false,
+                            min: 0,
+                            max: 1,
+                            inRange: {
+                                color: ['rgba(42,90,122,0.5)', 'rgba(201,168,76,0.35)']
+                            }
+                        },
+                        geo: {
+                            map: 'yunnan',
+                            roam: true,
+                            zoom: 1.2,
+                            center: [101.5, 25.0],
+                            itemStyle: {
+                                areaColor: '#2A5A7A',
+                                borderColor: 'rgba(255,255,240,0.06)',
+                                borderWidth: 1.5
+                            },
+                            emphasis: {
+                                itemStyle: {
+                                    areaColor: 'rgba(201,168,76,0.20)'
+                                }
+                            },
+                            label: {
+                                show: true,
+                                formatter: function(params) {
+                                    return params.name.replace(/傣族彝族自治州|彝族回族自治县|哈尼族彝族自治州|藏族自治州|傈僳族自治州/g,
+                                        '');
+                                },
+                                color: 'rgba(255,255,240,0.15)',
+                                fontSize: 9
+                            }
+                        },
+                        series: [{
+                            name: '云南省',
+                            type: 'map',
+                            map: 'yunnan',
+                            geoIndex: 0,
+                            data: cityData,
+                            roam: true,
+                            zoom: 1.2,
+                            center: [101.5, 25.0],
+                            itemStyle: {
+                                areaColor: '#2A5A7A',
+                                borderColor: 'rgba(255,255,240,0.06)',
+                                borderWidth: 1.5
+                            },
+                            emphasis: {
+                                itemStyle: {
+                                    areaColor: 'rgba(201,168,76,0.20)'
+                                }
+                            },
+                            label: {
+                                show: true,
+                                formatter: function(params) {
+                                    return params.name.replace(/傣族彝族自治州|彝族回族自治县|哈尼族彝族自治州|藏族自治州|傈僳族自治州/g,
+                                        '');
+                                },
+                                color: 'rgba(255,255,240,0.15)',
+                                fontSize: 9
+                            },
+                            zlevel: 1
+                        }, {
+                            name: '遗产标注',
+                            type: 'scatter',
+                            coordinateSystem: 'geo',
+                            data: heritageData.map(function(h) {
+                                return {
+                                    name: h.name,
+                                    value: h.coords,
+                                    heritageId: h.id,
+                                    isHighlight: h.isHighlight || false,
+                                    type: h.type
+                                };
+                            }),
+                            symbolSize: function(data) {
+                                return data.isHighlight ? 22 : 16;
+                            },
+                            itemStyle: {
+                                color: function(data) {
+                                    if (data.isHighlight) return '#FF6B00';
+                                    if (data.type === '自然遗产') return '#7DBD8A';
+                                    return '#C9A84C';
+                                },
+                                shadowBlur: 18,
+                                shadowColor: function(data) {
+                                    if (data.isHighlight) return 'rgba(255,107,0,0.35)';
+                                    return 'rgba(218,165,32,0.12)';
+                                },
+                                borderColor: 'rgba(255,255,240,0.12)',
+                                borderWidth: 1
+                            },
+                            label: {
+                                show: true,
+                                formatter: function(params) {
+                                    return params.data.name.replace(/文化景观|保护区|遗址/g, '');
+                                },
+                                color: '#fff',
+                                fontSize: 10,
+                                fontWeight: 'bold',
+                                textShadowColor: 'rgba(0,0,0,0.8)',
+                                textShadowBlur: 6,
+                                position: 'right',
+                                distance: 4
+                            },
+                            emphasis: {
+                                itemStyle: {
+                                    color: '#ffd700',
+                                    shadowBlur: 30,
+                                    shadowColor: 'rgba(255,215,0,0.25)'
+                                },
+                                label: {
+                                    color: '#ffd700',
+                                    fontSize: 13
+                                }
+                            },
+                            zlevel: 2
+                        }]
+                    };
+
+                    myChart.setOption(option);
+
+                    // 点击标注点 → 显示详情
+                    myChart.on('click', function(params) {
+                        if (params.componentType === 'series' && params.seriesType === 'scatter') {
+                            var heritage = heritageData.find(function(h) { return h.id === params.data
+                                .heritageId; });
+                            if (heritage) showDetail(heritage);
+                        }
+                    });
+
+                    console.log('✅ 地图加载成功！');
+                    showDetail(heritageData[3]);
+
+                })
+                .catch(function(error) {
+                    console.error('❌ 地图加载失败:', error);
+                    document.getElementById('map2d').innerHTML =
+                        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:rgba(255,255,240,0.15);font-size:13px;letter-spacing:0.06rem;">' +
+                        '⚠️ 地图加载失败<br><span style="font-size:11px;color:rgba(255,255,240,0.05);margin-top:6px;">请检查 js/yunnan.json 文件是否存在</span></div>';
+                });
+        }
+
+        // ============================================================
+        // 显示详情
+        // ============================================================
+        function showDetail(heritage) {
+            var container = document.getElementById('detailContent');
+            if (!heritage) {
+                container.innerHTML = '<div class="detail-empty">请选择一处遗产查看详情</div>';
+                return;
+            }
+            var typeColor = heritage.type === '文化遗产' ? 'cultural' : 'natural';
+            var html = '';
+            html += '<img src="' + heritage.img + '" class="detail-image" alt="' + heritage.name +
+                '" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'150\'%3E%3Crect fill=\'%230A0E27\' width=\'400\' height=\'150\'/%3E%3Ctext x=\'200\' y=\'75\' text-anchor=\'middle\' fill=\'%23333\' font-size=\'16\' font-family=\'sans-serif\'%3E📷 图片待补充%3C/text%3E%3C/svg%3E\'">';
+            html += '<div class="detail-name">' + heritage.icon + ' ' + heritage.name + '<span class="sub">' + heritage
+                .city + '</span></div>';
+            html += '<div class="detail-meta">';
+            html += '<span>📅 ' + heritage.year + '年</span>';
+            html += '<span class="type-tag ' + typeColor + '">' + heritage.type + '</span>';
+            html += '</div>';
+            html += '<div class="detail-desc">' + heritage.desc + '</div>';
+            if (heritage.isHighlight) {
+                html += '<div class="fours-tags">';
+                html += '<span class="f-forest">🌳 森林</span>';
+                html += '<span class="f-village">🏡 村寨</span>';
+                html += '<span class="f-terrace">🌾 梯田</span>';
+                html += '<span class="f-water">💧 水系</span>';
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        // ============================================================
+        // 控制按钮
+        // ============================================================
+        document.getElementById('btnReset').addEventListener('click', function() {
+            myChart.setOption({
+                geo: {
+                    zoom: 1.2,
+                    center: [101.5, 25.0]
+                }
+            });
+        });
+
+        // ============================================================
+        // 启动
+        // ============================================================
+        initMap();
+    </script>
+
+</body>
+</html>
